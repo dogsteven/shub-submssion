@@ -14,13 +14,17 @@ type CalculateTotalValueBetweenResponse = {
 
 @Injectable()
 export class TimeTransform implements PipeTransform {
-  private regex = /(?<hour>\d{2}):(?<minute>\d{2}):(?<second>\d{2})/;
+  private regex = /^(?<hour>\d{2}):(?<minute>\d{2}):(?<second>\d{2})$/;
 
-  transform(value: string, metadata: ArgumentMetadata) {
+  transform(value: string | undefined, metadata: ArgumentMetadata) {
+    if (!value) {
+      throw new BadRequestException(`Value for query key "${metadata.data}" is missing.`);
+    }
+
     const regexResult = this.regex.exec(value);
 
     if (!regexResult) {
-      throw new BadRequestException(`Invalid time format "${value}".`);
+      throw new BadRequestException(`Invalid time format for query key "${metadata.data}" (expected format is "hh:mm:ss").`);
     }
 
     const groups = regexResult.groups;
@@ -30,15 +34,15 @@ export class TimeTransform implements PipeTransform {
     let second = Number.parseFloat(groups.second);
 
     if (hour >= 24) {
-      throw new BadRequestException(`Invalid hour value ${hour} in "${value}"`);
+      throw new BadRequestException(`Invalid hour value for query key "${metadata.data}" (hour value must be between 0 and 23).`);
     }
 
     if (minute >= 60) {
-      throw new BadRequestException(`Invalid minute value ${minute} in "${value}"`);
+      throw new BadRequestException(`Invalid minute value for query key "${metadata.data}" (minute value must be between 0 and 59).`);
     }
 
     if (second >= 60) {
-      throw new BadRequestException(`Invalid second value ${second} in "${value}"`);
+      throw new BadRequestException(`Invalid second value for query key "${metadata.data}" (second value must be between 0 and 59).`);
     }
 
     return { hour, minute, second }
@@ -84,10 +88,6 @@ export class AppController {
       })
     ) file: Express.Multer.File
   ): PrepareReportResponse {
-    if (!file) {
-      throw new BadRequestException("Report file is missing.");
-    }
-
     const report = this.genereateReport(file.buffer);
 
     this.reportService.prepareReport(report);
