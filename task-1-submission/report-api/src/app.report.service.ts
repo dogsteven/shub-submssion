@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 
 export type Time = {
     hour: number
@@ -15,10 +15,16 @@ export type Report = ReportEntry[];
 
 @Injectable()
 export class ReportService {
+    private prepared: boolean = false;
+
     private accumulativeValues: number[] = [];
     private times: number[] = [];
 
     prepareReport(report: Report) {
+        if (report.length == 0) {
+            throw new BadRequestException("Report file must have at least one entry.");
+        }
+        
         // Sort report by time
         report.sort((left, right) => {
             const leftTimeSeconds = this.convertTimeToSeconds(left.time);
@@ -38,7 +44,7 @@ export class ReportService {
 
         for (const entry of report) {
             const seconds = this.convertTimeToSeconds(entry.time);
-            
+
             if (this.times[this.times.length - 1] == seconds) {
                 this.accumulativeValues[this.accumulativeValues.length - 1] += entry.value;
             } else {
@@ -46,11 +52,21 @@ export class ReportService {
                 this.accumulativeValues.push(this.accumulativeValues[this.accumulativeValues.length - 1] + entry.value);
             }
         }
+
+        this.prepared = true;
     }
 
     calculateTotalValueBetween(startTime: Time, endTime: Time): number {
+        if (!this.prepared) {
+            throw new BadRequestException("Report file hasn't been prepared.");
+        }
+
         const startTimeSeconds = this.convertTimeToSeconds(startTime);
         const endTimeSeconds = this.convertTimeToSeconds(endTime);
+
+        if (startTimeSeconds > endTimeSeconds) {
+            throw new BadRequestException("Start time must be less than or equal to end time.");
+        }
 
         let startIndex = this.searchLessThanOrEqual(startTimeSeconds);
 
