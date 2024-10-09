@@ -33,14 +33,17 @@ export class TimeTransform implements PipeTransform {
     let minute = Number.parseInt(groups.minute);
     let second = Number.parseFloat(groups.second);
 
+    // This check should belong to the Time class, but it's ok in this scenario.
     if (hour >= 24) {
       throw new BadRequestException(`Invalid hour value for query key "${metadata.data}" (hour value must be between 0 and 23).`);
     }
 
+    // This check should belong to the Time class, but it's ok in this scenario.
     if (minute >= 60) {
       throw new BadRequestException(`Invalid minute value for query key "${metadata.data}" (minute value must be between 0 and 59).`);
     }
 
+    // This check should belong to the Time class itself, but it's ok in this scenario.
     if (second >= 60) {
       throw new BadRequestException(`Invalid second value for query key "${metadata.data}" (second value must be between 0 and 59).`);
     }
