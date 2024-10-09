@@ -22,6 +22,7 @@ export class ReportService {
 
     prepareReport(report: Report) {
         if (report.length == 0) {
+            // We should not assume that the communication channel is HTTP, but it's ok in this scenario.
             throw new BadRequestException("Report file must have at least one entry.");
         }
         
@@ -46,6 +47,7 @@ export class ReportService {
             const seconds = this.convertTimeToSeconds(entry.time);
 
             if (this.times[this.times.length - 1] == seconds) {
+                // Handle time duplication
                 this.accumulativeValues[this.accumulativeValues.length - 1] += entry.value;
             } else {
                 this.times.push(seconds);
@@ -58,6 +60,7 @@ export class ReportService {
 
     calculateTotalValueBetween(startTime: Time, endTime: Time): number {
         if (!this.prepared) {
+            // We should not assume that the communication channel is HTTP, but it's ok in this scenario.
             throw new BadRequestException("Report file hasn't been prepared.");
         }
 
@@ -65,6 +68,7 @@ export class ReportService {
         const endTimeSeconds = this.convertTimeToSeconds(endTime);
 
         if (startTimeSeconds > endTimeSeconds) {
+            // We should not assume that the communication channel is HTTP, but it's ok in this scenario.
             throw new BadRequestException("Start time must be less than or equal to end time.");
         }
 
