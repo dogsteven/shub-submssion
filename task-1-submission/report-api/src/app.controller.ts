@@ -2,7 +2,8 @@ import { ArgumentMetadata, BadRequestException, Controller, FileTypeValidator, G
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ReportService } from './app.report.service';
 import * as XLSX from "xlsx";
-import { Report, Time } from './app.report.service';
+import { Report } from './app.report.service';
+import { Time } from './app.time';
 
 type PrepareReportResponse = {
   message: string
