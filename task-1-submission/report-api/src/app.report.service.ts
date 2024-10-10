@@ -108,32 +108,6 @@ export class ReportService {
         return this.accumulativeValues[endIndex] - this.accumulativeValues[startIndex];
     }
 
-    private searchLessThanOrEqual(seconds: number): number {
-        if (seconds > this.times[this.times.length - 1]) {
-            return this.times.length - 1;
-        }
-
-        let left = 0;
-        let right = this.times.length - 1;
-
-        // Binary search with invariance: this.times[left] < seconds <= this.times[right]
-        while (left < right - 1) {
-            const pivot = Math.floor((left + right) / 2);
-
-            if (this.times[pivot] < seconds) {
-                left = pivot;
-            } else {
-                right = pivot;
-            }
-        }
-
-        if (seconds == this.times[right]) {
-            return right;
-        }
-
-        return left;
-    }
-
     private optimizedSearchLessThanOrEqual(seconds: number, upperIndex: number = this.times.length - 1): number {
         if (seconds > this.times[upperIndex]) {
             return upperIndex;
