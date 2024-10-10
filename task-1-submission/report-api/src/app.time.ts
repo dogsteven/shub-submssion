@@ -1,9 +1,7 @@
 import { BadRequestException } from "@nestjs/common";
 
 export class Time {
-    private readonly hour: number;
-    private readonly minute: number;
-    private readonly second: number;
+    private readonly seconds: number;
 
     constructor(hour: number, minute: number, second: number) {
         if (hour < 0 || hour >= 24) {
@@ -21,26 +19,10 @@ export class Time {
             throw new BadRequestException(`Invalid second value ${second} (second value must be between 0 and 59).`);
         }
 
-        this.hour = hour;
-        this.minute = minute;
-        this.second = second;
+        this.seconds = hour * 3600 + minute * 60 + second;
     }
 
     static compareFn(left: Time, right: Time): number {
-        if (left.hour < right.hour) {
-            return -1;
-        } else if (left.hour > right.hour) {
-            return 1;
-        } else if (left.minute < right.minute) {
-            return -1;
-        } else if (left.minute > right.minute) {
-            return 1;
-        } else if (left.second < right.second) {
-            return -1;
-        } else if (left.second > right.second) {
-            return 1;
-        } else {
-            return 0;
-        }
+        return Math.sign(left.seconds - right.seconds);
     }
 }
