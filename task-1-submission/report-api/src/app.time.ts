@@ -26,7 +26,21 @@ export class Time {
         this.second = second;
     }
 
-    convertToSeconds(): number {
-        return this.hour * 3600 + this.minute * 60 + this.second;
+    static compareFn(left: Time, right: Time): number {
+        if (left.hour < right.hour) {
+            return -1;
+        } else if (left.hour > right.hour) {
+            return 1;
+        } else if (left.minute < right.minute) {
+            return -1;
+        } else if (left.minute > right.minute) {
+            return 1;
+        } else if (left.second < right.second) {
+            return -1;
+        } else if (left.second > right.second) {
+            return 1;
+        } else {
+            return 0;
+        }
     }
 }

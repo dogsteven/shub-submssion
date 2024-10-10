@@ -74,13 +74,9 @@ describe("ReportService unit testing", () => {
 
     function bruteForceCalculateTotalValueBetween(startTime: Time, endTime: Time): number {
       let sum = 0;
-      let startTimeSeconds = startTime.convertToSeconds();
-      let endTimeSeconds = endTime.convertToSeconds();
 
       for (const entry of report) {
-        let seconds = entry.time.convertToSeconds();
-
-        if (seconds >= startTimeSeconds && seconds <= endTimeSeconds) {
+        if (Time.compareFn(startTime, entry.time) <= 0 && Time.compareFn(entry.time, endTime) <= 0) {
           sum += entry.value;
         }
       }

@@ -1,16 +1,6 @@
 import { Time } from "./app.time";
 
 describe("ReportService unit testing", () => {  
-  it("should return number of seconds", () => {
-    const hour = 6;
-    const minute = 45;
-    const second = 56;
-
-    const time = new Time(hour, minute, second);
-
-    expect(time.convertToSeconds()).toBe(hour * 3600 + minute * 60 + second);
-  });
-
   it("should throw invalid hour value 1", () => {
     const hour = -2;
     const minute = 45;
@@ -129,5 +119,54 @@ describe("ReportService unit testing", () => {
     expect(() => {
       new Time(hour, minute, second);
     }).toThrow(`Invalid second value ${second} (second value must be between 0 and 59).`);
+  });
+
+  it("should return less than 1", () => {
+    const left = new Time(2, 50, 34);
+    const right = new Time(3, 50, 34);
+
+    expect(Time.compareFn(left, right)).toBe(-1);
+  });
+
+  it("should return less than 2", () => {
+    const left = new Time(2, 50, 34);
+    const right = new Time(2, 59, 34);
+
+    expect(Time.compareFn(left, right)).toBe(-1);
+  });
+
+  it("should return less than 3", () => {
+    const left = new Time(2, 50, 34);
+    const right = new Time(2, 50, 37);
+
+    expect(Time.compareFn(left, right)).toBe(-1);
+  });
+
+  it("should return greater than 1", () => {
+    const left = new Time(3, 50, 34);
+    const right = new Time(2, 50, 34);
+
+    expect(Time.compareFn(left, right)).toBe(1);
+  });
+
+  it("should return greater than 2", () => {
+    const left = new Time(2, 59, 34);
+    const right = new Time(2, 50, 34);
+    
+    expect(Time.compareFn(left, right)).toBe(1);
+  });
+
+  it("should return greater than 3", () => {
+    const left = new Time(2, 50, 37);
+    const right = new Time(2, 50, 34);
+
+    expect(Time.compareFn(left, right)).toBe(1);
+  });
+
+  it("should return equal", () => {
+    const left = new Time(12, 55, 45);
+    const right = new Time(12, 55, 45);
+
+    expect(Time.compareFn(left, right)).toBe(0);
   });
 });

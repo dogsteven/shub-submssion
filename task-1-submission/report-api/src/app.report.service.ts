@@ -13,7 +13,7 @@ export class ReportService {
     private prepared: boolean = false;
 
     private accumulativeValues: number[] = [];
-    private times: number[] = [];
+    private times: (Time | null)[] = [];
 
     prepareReport(report: Report) {
         if (report.length == 0) {
@@ -23,29 +23,18 @@ export class ReportService {
         
         // Sort report by time
         report.sort((left, right) => {
-            const leftTimeSeconds = left.time.convertToSeconds();
-            const rightTimeSeconds = right.time.convertToSeconds();
-
-            if (leftTimeSeconds < rightTimeSeconds) {
-                return -1;
-            } else if (leftTimeSeconds == rightTimeSeconds) {
-                return 0;
-            } else {
-                return 1;
-            }
+            return this.compareTime(left.time, right.time);
         });
 
         this.accumulativeValues = [0];
-        this.times = [-1];
+        this.times = [null];
 
         for (const entry of report) {
-            const seconds = entry.time.convertToSeconds();
-
-            if (this.times[this.times.length - 1] == seconds) {
+            if (this.compareTime(this.times[this.times.length - 1], entry.time) === 0) {
                 // Handle time duplication
                 this.accumulativeValues[this.accumulativeValues.length - 1] += entry.value;
             } else {
-                this.times.push(seconds);
+                this.times.push(entry.time);
                 this.accumulativeValues.push(this.accumulativeValues[this.accumulativeValues.length - 1] + entry.value);
             }
         }
@@ -58,28 +47,40 @@ export class ReportService {
             // We should not assume that the communication channel is HTTP, but it's ok in this scenario.
             throw new BadRequestException("Report file hasn't been prepared.");
         }
-
-        const startTimeSeconds = startTime.convertToSeconds();
-        const endTimeSeconds = endTime.convertToSeconds();
-
-        if (startTimeSeconds > endTimeSeconds) {
+        if (this.compareTime(startTime, endTime) > 0) {
             // We should not assume that the communication channel is HTTP, but it's ok in this scenario.
             throw new BadRequestException("Start time must be less than or equal to end time.");
         }
 
-        const endIndex = this.optimizedSearchLessThanOrEqual(endTimeSeconds);
+        const endIndex = this.optimizedSearchLessThanOrEqual(endTime);
 
-        let startIndex = this.optimizedSearchLessThanOrEqual(startTimeSeconds, endIndex);
+        let startIndex = this.optimizedSearchLessThanOrEqual(startTime, endIndex);
 
-        if (startTimeSeconds == this.times[startIndex]) {
+        if (this.compareTime(startTime, this.times[startIndex]) == 0) {
             startIndex -= 1;
         }
 
         return this.accumulativeValues[endIndex] - this.accumulativeValues[startIndex];
     }
 
-    private optimizedSearchLessThanOrEqual(seconds: number, upperIndex: number = this.times.length - 1): number {
-        if (seconds > this.times[upperIndex]) {
+    private compareTime(left: Time | null, right: Time | null): number {
+        if (!left) {
+            if (!right) {
+                return 0;
+            }
+            
+            return -1;
+        }
+
+        if (!right) {
+            return 1;
+        }
+
+        return Time.compareFn(left, right);
+    }
+
+    private optimizedSearchLessThanOrEqual(time: Time, upperIndex: number = this.times.length - 1): number {
+        if (this.compareTime(time, this.times[upperIndex]) > 0) {
             return upperIndex;
         }
 
@@ -89,14 +90,14 @@ export class ReportService {
         while (left < right - 1) {
             const pivot = Math.floor((left + right) / 2);
 
-            if (this.times[pivot] < seconds) {
+            if (this.compareTime(this.times[pivot], time) < 0) {
                 left = pivot;
             } else {
                 right = pivot;
             }
         }
 
-        if (seconds == this.times[right]) {
+        if (this.compareTime(time, this.times[right]) === 0) {
             return right;
         }
 
