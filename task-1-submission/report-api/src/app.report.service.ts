@@ -1,9 +1,34 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 
-export type Time = {
-    hour: number
-    minute: number
-    second: number
+export class Time {
+    private readonly hour: number;
+    private readonly minute: number;
+    private readonly second: number;
+
+    constructor(hour: number, minute: number, second: number) {
+        if (hour < 0 || hour >= 24) {
+            // We should not assume that the communication channel is HTTP, but it's ok in this scenario.
+            throw new BadRequestException(`Invalid hour value ${hour} (hour value must be between 0 and 23).`);
+        }
+
+        if (minute < 0 || minute >= 60) {
+            // We should not assume that the communication channel is HTTP, but it's ok in this scenario.
+            throw new BadRequestException(`Invalid minute value ${minute} (minute value must be between 0 and 59).`);
+        }
+
+        if (second < 0 || second >= 60) {
+            // We should not assume that the communication channel is HTTP, but it's ok in this scenario.
+            throw new BadRequestException(`Invalid second value ${second} (second value must be between 0 and 59).`);
+        }
+
+        this.hour = hour;
+        this.minute = minute;
+        this.second = second;
+    }
+
+    convertToSeconds(): number {
+        return this.hour * 3600 + this.minute * 60 + this.second;
+    }
 }
 
 export type ReportEntry = {
@@ -28,8 +53,8 @@ export class ReportService {
         
         // Sort report by time
         report.sort((left, right) => {
-            const leftTimeSeconds = this.convertTimeToSeconds(left.time);
-            const rightTimeSeconds = this.convertTimeToSeconds(right.time);
+            const leftTimeSeconds = left.time.convertToSeconds();
+            const rightTimeSeconds = right.time.convertToSeconds();
 
             if (leftTimeSeconds < rightTimeSeconds) {
                 return -1;
@@ -44,7 +69,7 @@ export class ReportService {
         this.times = [-1];
 
         for (const entry of report) {
-            const seconds = this.convertTimeToSeconds(entry.time);
+            const seconds = entry.time.convertToSeconds();
 
             if (this.times[this.times.length - 1] == seconds) {
                 // Handle time duplication
@@ -64,21 +89,21 @@ export class ReportService {
             throw new BadRequestException("Report file hasn't been prepared.");
         }
 
-        const startTimeSeconds = this.convertTimeToSeconds(startTime);
-        const endTimeSeconds = this.convertTimeToSeconds(endTime);
+        const startTimeSeconds = startTime.convertToSeconds();
+        const endTimeSeconds = endTime.convertToSeconds();
 
         if (startTimeSeconds > endTimeSeconds) {
             // We should not assume that the communication channel is HTTP, but it's ok in this scenario.
             throw new BadRequestException("Start time must be less than or equal to end time.");
         }
 
-        let startIndex = this.searchLessThanOrEqual(startTimeSeconds);
+        const endIndex = this.optimizedSearchLessThanOrEqual(endTimeSeconds);
+
+        let startIndex = this.optimizedSearchLessThanOrEqual(startTimeSeconds, endIndex);
 
         if (startTimeSeconds == this.times[startIndex]) {
             startIndex -= 1;
         }
-
-        const endIndex = this.searchLessThanOrEqual(endTimeSeconds);
 
         return this.accumulativeValues[endIndex] - this.accumulativeValues[startIndex];
     }
@@ -92,12 +117,7 @@ export class ReportService {
         let right = this.times.length - 1;
 
         // Binary search with invariance: this.times[left] < seconds <= this.times[right]
-        while (left < right) {
-            // Check if still can divide
-            if (left == right - 1) {
-                break;
-            }
-
+        while (left < right - 1) {
             const pivot = Math.floor((left + right) / 2);
 
             if (this.times[pivot] < seconds) {
@@ -114,9 +134,28 @@ export class ReportService {
         return left;
     }
 
-    private convertTimeToSeconds(time: Time): number {
-        let { hour, minute, second } = time;
+    private optimizedSearchLessThanOrEqual(seconds: number, upperIndex: number = this.times.length - 1): number {
+        if (seconds > this.times[upperIndex]) {
+            return upperIndex;
+        }
 
-        return hour * 3600 + minute * 60 + second;
+        let left = 0;
+        let right = upperIndex;
+
+        while (left < right - 1) {
+            const pivot = Math.floor((left + right) / 2);
+
+            if (this.times[pivot] < seconds) {
+                left = pivot;
+            } else {
+                right = pivot;
+            }
+        }
+
+        if (seconds == this.times[right]) {
+            return right;
+        }
+
+        return left;
     }
 }

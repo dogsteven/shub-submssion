@@ -16,7 +16,7 @@ type CalculateTotalValueBetweenResponse = {
 export class TimeTransform implements PipeTransform {
   private regex = /^(?<hour>\d{2}):(?<minute>\d{2}):(?<second>\d{2})$/;
 
-  transform(value: string | undefined, metadata: ArgumentMetadata) {
+  transform(value: string | undefined, metadata: ArgumentMetadata): Time {
     if (!value) {
       throw new BadRequestException(`Value for query key "${metadata.data}" is missing.`);
     }
@@ -33,22 +33,7 @@ export class TimeTransform implements PipeTransform {
     let minute = Number.parseInt(groups.minute);
     let second = Number.parseFloat(groups.second);
 
-    // This check should belong to the Time class, but it's ok in this scenario.
-    if (hour >= 24) {
-      throw new BadRequestException(`Invalid hour value for query key "${metadata.data}" (hour value must be between 0 and 23).`);
-    }
-
-    // This check should belong to the Time class, but it's ok in this scenario.
-    if (minute >= 60) {
-      throw new BadRequestException(`Invalid minute value for query key "${metadata.data}" (minute value must be between 0 and 59).`);
-    }
-
-    // This check should belong to the Time class itself, but it's ok in this scenario.
-    if (second >= 60) {
-      throw new BadRequestException(`Invalid second value for query key "${metadata.data}" (second value must be between 0 and 59).`);
-    }
-
-    return { hour, minute, second }
+    return new Time(hour, minute, second);
   }
 
 }
@@ -66,11 +51,11 @@ export class AppController {
     const report: Report = rows.slice(8).map((row) => {
       const timeString: string = row[2];
 
-      const time: Time = {
-        hour: Number.parseInt(timeString.substring(0, 2)),
-        minute: Number.parseInt(timeString.substring(3, 5)),
-        second: Number.parseInt(timeString.substring(6, 8))
-      };
+      let hour = Number.parseInt(timeString.substring(0, 2));
+      let minute = Number.parseInt(timeString.substring(3, 5));
+      let second = Number.parseInt(timeString.substring(6, 8));
+
+      let time = new Time(hour, minute, second);
 
       const value: number = row[8];
 
